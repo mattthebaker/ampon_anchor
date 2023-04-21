@@ -1,25 +1,26 @@
+use anchor::{klipper_command, klipper_reply};
+
+use crate::pac::TIM2;
 use crate::State;
-use anchor::*;
 use core::cell::Cell;
-use cortex_m::peripheral::{DCB, DWT};
 
 pub struct Clock {
+    timer: TIM2,
     high: Cell<u32>,
     last_low: Cell<u32>,
 }
 
 impl Clock {
-    pub fn init(dcb: &mut DCB, dwt: &mut DWT) -> Clock {
-        dcb.enable_trace();
-        dwt.enable_cycle_counter();
+    pub fn init(timer: TIM2) -> Clock {
         Clock {
+            timer,
             high: Cell::new(0),
             last_low: Cell::new(0),
         }
     }
 
     pub fn low(&self) -> InstantShort {
-        InstantShort(DWT::cycle_count())
+        InstantShort(self.timer.cnt.read().bits())
     }
 
     pub fn update_high(&self) {

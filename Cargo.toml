@@ -1,22 +1,18 @@
 [package]
 authors = ["Matt Baker <baker.matt.j@gmail.com>"]
-name = "crampon_anchor"
-version = "0.1.1"
+name = "ampon_anchor"
+version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 cortex-m-rt = {version = "0.7.0", features = ["device"]}
 cortex-m = "0.7.0"
 panic-halt = "0.2.0"
-stm32l4xx-hal = {version = "0.7.0", features = ["stm32l412", "rt", "stm32-usbd"]}
+stm32f0xx-hal = {version = "0.18.0", features = ["stm32f072", "rt", "stm32-usbd"]}
 embedded-hal = "0.2.7"
 usb-device = "0.2.9"
 usbd-serial = "0.1.1"
 anchor = { git = "ssh://git@github.com/Annex-engineering/anchor.git" }
-
-[features]
-default = []
-serialnumber = []
 
 [build-dependencies]
 anchor_codegen = { git = "ssh://git@github.com/Annex-engineering/anchor.git" }

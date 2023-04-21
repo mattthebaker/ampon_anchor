@@ -8,13 +8,13 @@ use usbd_serial::{CdcAcmClass, USB_CLASS_CDC};
 
 pub const USB_MAX_PACKET_SIZE: usize = 64;
 
-struct CramponUsbDevice {
+struct AmponUsbDevice {
     bus: UsbDevice<'static, UsbBus<Peripheral>>,
     serial: CdcAcmClass<'static, UsbBus<Peripheral>>,
     full_count: u8,
 }
 
-impl CramponUsbDevice {
+impl AmponUsbDevice {
     pub fn poll(&mut self) {
         self.bus.poll(&mut [&mut self.serial]);
     }
@@ -66,10 +66,10 @@ impl CramponUsbDevice {
     }
 }
 
-pub struct CramponUsb(Mutex<RefCell<CramponUsbDevice>>);
+pub struct AmponUsb(Mutex<RefCell<AmponUsbDevice>>);
 
-impl CramponUsb {
-    pub fn init(peripheral: Peripheral) -> CramponUsb {
+impl AmponUsb {
+    pub fn init(peripheral: Peripheral) -> AmponUsb {
         let allocator = unsafe {
             static mut USB_ALLOCATOR: Option<UsbBusAllocator<UsbBus<Peripheral>>> = None;
             if USB_ALLOCATOR.is_none() {
@@ -80,16 +80,16 @@ impl CramponUsb {
 
         let serial = CdcAcmClass::new(allocator, USB_MAX_PACKET_SIZE as u16);
 
-        let bus = UsbDeviceBuilder::new(allocator, UsbVidPid(0x0483, 0xaeca))
+        let bus = UsbDeviceBuilder::new(allocator, UsbVidPid(0x0483, 0xaaaa))
             .composite_with_iads()
-            .manufacturer("Annex Engineering")
-            .product("Crampon")
+            .manufacturer("Anchor")
+            .product("Ampon")
             .device_class(USB_CLASS_CDC);
         #[cfg(feature = "serialnumber")]
         let bus = bus.serial_number(crate::serialnumber::get_serial());
         let bus = bus.build();
 
-        CramponUsb(Mutex::new(RefCell::new(CramponUsbDevice {
+        AmponUsb(Mutex::new(RefCell::new(AmponUsbDevice {
             bus,
             serial,
             full_count: 0,

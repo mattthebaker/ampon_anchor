@@ -1,4 +1,4 @@
-use crate::{clock, clock::InstantShort, crampon_global, State};
+use crate::{ampon_global, clock, clock::InstantShort, State};
 use anchor::{klipper_command, klipper_reply};
 use embedded_hal::blocking::spi::{Transfer, Write};
 use embedded_hal::digital::v2::OutputPin;
@@ -299,13 +299,13 @@ pub fn query_adxl345(context: &mut State, _oid: u8, clock: u32, rest_ticks: u32)
     if rest_ticks != 0 {
         context.adxl.sched_start(clock, rest_ticks);
     } else {
-        context.adxl.stop(&crampon_global().clock);
+        context.adxl.stop(&ampon_global().clock);
     }
 }
 
 #[klipper_command]
 pub fn query_adxl345_status(context: &mut State, _oid: u8) {
-    context.adxl.status(&crampon_global().clock);
+    context.adxl.status(&ampon_global().clock);
 }
 
 #[klipper_command]

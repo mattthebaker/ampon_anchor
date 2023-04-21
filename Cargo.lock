@@ -9,6 +9,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "ampon_anchor"
+version = "0.1.0"
+dependencies = [
+ "anchor",
+ "anchor_codegen",
+ "cortex-m",
+ "cortex-m-rt",
+ "embedded-hal",
+ "panic-halt",
+ "stm32f0xx-hal",
+ "usb-device",
+ "usbd-serial",
+]
+
+[[package]]
 name = "anchor"
 version = "0.1.0"
 source = "git+ssh://git@github.com/Annex-engineering/anchor.git#4a54a57910c1864e3f3b15b76f8eae51a569a873"
@@ -135,36 +150,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "crampon_anchor"
-version = "0.1.1"
-dependencies = [
- "anchor",
- "anchor_codegen",
- "cortex-m",
- "cortex-m-rt",
- "embedded-hal",
- "panic-halt",
- "stm32l4xx-hal",
- "usb-device",
- "usbd-serial",
-]
-
-[[package]]
 name = "crc32fast"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b540bd8bc810d3885c6ea91e2018302f68baba2129ab3e88f32389ee9370880d"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "embedded-dma"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46c8c02e4347a0267ca60813c952017f4c5948c232474c6010a381a337f1bda4"
-dependencies = [
- "stable_deref_trait",
 ]
 
 [[package]]
@@ -186,21 +177,6 @@ dependencies = [
  "crc32fast",
  "miniz_oxide",
 ]
-
-[[package]]
-name = "fugit"
-version = "0.3.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ab17bb279def6720d058cb6c052249938e7f99260ab534879281a95367a87e5"
-dependencies = [
- "gcd",
-]
-
-[[package]]
-name = "gcd"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d758ba1b47b00caf47f24925c0074ecb20d6dfcffe7f6d53395c0465674841a"
 
 [[package]]
 name = "itoa"
@@ -287,12 +263,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rand_core"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
-
-[[package]]
 name = "rustc_version"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -369,12 +339,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stable_deref_trait"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
 name = "stm32-usbd"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -386,10 +350,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "stm32l4"
+name = "stm32f0"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c67adac30ec976cdc3cd1189cc0dd52c37db34c83083456f7fd8fc985d6706c0"
+checksum = "ad6efffc472f66098c4ec84d5907b4d001c550db86a7dfa607adf1ba94adbf82"
 dependencies = [
  "bare-metal 1.0.0",
  "cortex-m",
@@ -398,22 +362,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "stm32l4xx-hal"
-version = "0.7.1"
+name = "stm32f0xx-hal"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08b0f9e87e996030e3382b0f086429691ba61c5f594b65f45e76414246201d93"
+checksum = "79544d457fe9a119c6fd02f0a16b8c20f39472b03199aac0a307d871a7015ad8"
 dependencies = [
+ "bare-metal 1.0.0",
  "bxcan",
  "cast",
  "cortex-m",
- "embedded-dma",
  "embedded-hal",
- "fugit",
- "nb 0.1.3",
- "rand_core",
- "stable_deref_trait",
+ "nb 1.0.0",
  "stm32-usbd",
- "stm32l4",
+ "stm32f0",
  "void",
 ]
 
