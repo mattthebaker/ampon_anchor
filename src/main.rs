@@ -18,7 +18,7 @@ use cortex_m::interrupt::free;
 use cortex_m_rt::entry;
 
 use hal::usb::Peripheral;
-use hal::{gpio::gpiob::*, gpio::*, stm32, stm32::SPI2};
+use hal::{gpio::gpioa::*, gpio::*, stm32, stm32::SPI1};
 use pac::CorePeripherals;
 
 use anchor::*;
@@ -35,8 +35,8 @@ const BOOTLOADER_ST_ADDR: u32 = 0x1fff_c800;
 const LED_TOGGLE_TICKS: u32 = CLOCK_FREQ / 8;
 
 type AmponAdxl = adxl345::Adxl<
-    Spi<SPI2, PB13<Alternate<AF0>>, PB14<Alternate<AF0>>, PB15<Alternate<AF0>>, EightBit>,
-    PB12<Output<PushPull>>,
+    Spi<SPI1, PA5<Alternate<AF0>>, PA6<Alternate<AF0>>, PA7<Alternate<AF0>>, EightBit>,
+    PA4<Output<PushPull>>,
 >;
 
 pub struct State {
@@ -59,7 +59,7 @@ impl State {
 
 pub struct Ampon {
     core: CorePeripherals,
-    pin_led: PB0<Output<PushPull>>,
+    pin_led: PA14<Output<PushPull>>,
     led_tick_time: Option<clock::InstantShort>,
     state: State,
 }
@@ -95,9 +95,8 @@ impl Ampon {
 
         // Configure the on-board LED (LD3, green)
         let gpioa = dp.GPIOA.split(&mut rcc);
-        let gpiob = dp.GPIOB.split(&mut rcc);
 
-        let mut pin_led = cortex_m::interrupt::free(|cs| gpiob.pb0.into_push_pull_output(cs));
+        let mut pin_led = cortex_m::interrupt::free(|cs| gpioa.pa14.into_push_pull_output(cs));
         pin_led.set_low().ok(); // Turn off
 
         let mcu_clock = clock::Clock::init(dp.TIM2);
@@ -109,17 +108,17 @@ impl Ampon {
         };
         let usb = usb::AmponUsb::init(usb_peripheral);
 
-        let cs = cortex_m::interrupt::free(|cs| gpiob.pb12.into_push_pull_output(cs));
+        let cs = cortex_m::interrupt::free(|cs| gpioa.pa4.into_push_pull_output(cs));
 
         let (sck, miso, mosi) = cortex_m::interrupt::free(move |cs| {
             (
-                gpiob.pb13.into_alternate_af0(cs),
-                gpiob.pb14.into_alternate_af0(cs),
-                gpiob.pb15.into_alternate_af0(cs),
+                gpioa.pa5.into_alternate_af0(cs),
+                gpioa.pa6.into_alternate_af0(cs),
+                gpioa.pa7.into_alternate_af0(cs),
             )
         });
 
-        let spi = Spi::spi2(dp.SPI2, (sck, miso, mosi), MODE_3, 8.mhz(), &mut rcc);
+        let spi = Spi::spi1(dp.SPI1, (sck, miso, mosi), MODE_3, 8.mhz(), &mut rcc);
         let adxl = AmponAdxl::init(spi, cs);
 
         AmponParts {
@@ -257,4 +256,4 @@ klipper_enumeration!(
 );
 
 #[klipper_constant]
-const BUS_PINS_spi1: &str = "PB13,PB14,PB15";
+const BUS_PINS_spi1: &str = "PA5,PA6,PA7";
