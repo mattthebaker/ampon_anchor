@@ -11,7 +11,7 @@ if ! md5sum --status -c "release/ampon.md5" ; then
 fi
 
 # put device into bootloader
-for dev in /dev/serial/by-id/usb-Anchor_Ampon* /dev/serial/by-id/usb-Klipper_stm32f042xx* ; do
+for dev in /dev/serial/by-id/usb-Anchor_Ampon* /dev/serial/by-id/usb-Klipper_stm32f042* ; do
     if [ -e "$dev" ] ; then
         echo "Entering bootloader for $dev"
         stty -F "$dev" 1200
