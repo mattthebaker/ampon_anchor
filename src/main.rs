@@ -84,6 +84,8 @@ impl Ampon {
         dp.RCC.apb1rstr.modify(|_, w| w.tim2rst().clear_bit());
         dp.TIM2.cr1.modify(|_, w| w.cen().set_bit());
 
+        hal::usb::remap_pins(&mut dp.RCC, &mut dp.SYSCFG);
+
         let mut rcc = dp
             .RCC
             .configure()
@@ -97,7 +99,7 @@ impl Ampon {
         let gpioa = dp.GPIOA.split(&mut rcc);
 
         let mut pin_led = cortex_m::interrupt::free(|cs| gpioa.pa14.into_push_pull_output(cs));
-        pin_led.set_low().ok(); // Turn off
+        pin_led.set_high().ok(); // Turn on
 
         let mcu_clock = clock::Clock::init(dp.TIM2);
 
@@ -225,7 +227,7 @@ pub fn ampon_global() -> &'static AmponGlobal {
 
 #[entry]
 fn main() -> ! {
-    bootloader_check();
+    //bootloader_check();
     Ampon::init().run_forever();
 }
 
