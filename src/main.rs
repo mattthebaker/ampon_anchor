@@ -28,9 +28,9 @@ mod clock;
 mod commands;
 mod usb;
 
-const BOOTLOADER_FLAG_ADDR: u32 = 0x2000_2ffc; // 0 and max get clobbered at init
+const BOOTLOADER_FLAG_ADDR: u32 = 0x2000_15fc; // 0 and max get clobbered at init
 const BOOTLOADER_FLAG_MAGIC: u32 = 0xf026_69ef;
-const BOOTLOADER_ST_ADDR: u32 = 0x1fff_c800;
+const BOOTLOADER_ST_ADDR: u32 = 0x1fff_c400;
 
 const LED_TOGGLE_TICKS: u32 = CLOCK_FREQ / 8;
 
@@ -86,6 +86,10 @@ impl Ampon {
 
         hal::usb::remap_pins(&mut dp.RCC, &mut dp.SYSCFG);
 
+        //dp.RCC.apb1enr.modify(|_, w| w.usben().set_bit());
+        //dp.USB.cntr.modify(|_, w| w.fres().set_bit());
+        //dp.USB.cntr.modify(|_, w| w.fres().clear_bit());
+
         let mut rcc = dp
             .RCC
             .configure()
@@ -97,6 +101,25 @@ impl Ampon {
 
         // Configure the on-board LED (LD3, green)
         let gpioa = dp.GPIOA.split(&mut rcc);
+        let gpiob = dp.GPIOB.split(&mut rcc);
+
+        // bootloader magic
+        unsafe {
+            if ptr::read(BOOTLOADER_FLAG_ADDR as *const u32) == !BOOTLOADER_FLAG_MAGIC {
+                ptr::write(BOOTLOADER_FLAG_ADDR as *mut u32, 0);
+                asm!("nop");
+                cortex_m::peripheral::SCB::sys_reset();
+            }
+            if ptr::read(BOOTLOADER_FLAG_ADDR as *const u32) == BOOTLOADER_FLAG_MAGIC {
+                ptr::write(BOOTLOADER_FLAG_ADDR as *mut u32, !BOOTLOADER_FLAG_MAGIC);
+                let mut pin_bl =
+                    cortex_m::interrupt::free(|cs| gpiob.pb8.into_push_pull_output(cs));
+                pin_bl.set_high().ok(); // f042 has a bug (feature?) where it won't run bl if pin isn't physically asserted
+                let initial_sp = ptr::read(BOOTLOADER_ST_ADDR as *const u32);
+                let start_addr = ptr::read((BOOTLOADER_ST_ADDR + 4) as *const u32);
+                asm!("mov sp, {0}\nbx {1}", in(reg) initial_sp, in(reg) start_addr);
+            }
+        }
 
         let mut pin_led = cortex_m::interrupt::free(|cs| gpioa.pa14.into_push_pull_output(cs));
         pin_led.set_high().ok(); // Turn on
@@ -183,22 +206,6 @@ impl Ampon {
     }
 }
 
-fn bootloader_check() {
-    unsafe {
-        if ptr::read(BOOTLOADER_FLAG_ADDR as *const u32) == !BOOTLOADER_FLAG_MAGIC {
-            ptr::write(BOOTLOADER_FLAG_ADDR as *mut u32, 0);
-            asm!("nop");
-            cortex_m::peripheral::SCB::sys_reset();
-        }
-        if ptr::read(BOOTLOADER_FLAG_ADDR as *const u32) == BOOTLOADER_FLAG_MAGIC {
-            ptr::write(BOOTLOADER_FLAG_ADDR as *mut u32, !BOOTLOADER_FLAG_MAGIC);
-            let initial_sp = ptr::read(BOOTLOADER_ST_ADDR as *const u32);
-            let start_addr = ptr::read((BOOTLOADER_ST_ADDR + 4) as *const u32);
-            asm!("mov sp, {0}\nbx {1}", in(reg) initial_sp, in(reg) start_addr);
-        }
-    }
-}
-
 impl AmponParts {
     fn run_forever(mut self) -> ! {
         unsafe {
@@ -227,7 +234,6 @@ pub fn ampon_global() -> &'static AmponGlobal {
 
 #[entry]
 fn main() -> ! {
-    //bootloader_check();
     Ampon::init().run_forever();
 }
 
