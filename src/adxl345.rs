@@ -141,35 +141,13 @@ where
         self.sched_wake(clock);
     }
 
-    fn stop(&mut self, clock: &clock::Clock) {
+    fn stop(&mut self) {
         self.running = false;
         self.wake_time = None;
 
-        let before = clock.low();
         self.cs.set_low().ok();
         self.spi.write(&[RegAddr::POWER_CTL, 0x00]).ok();
         self.cs.set_high().ok();
-        let after = clock.low();
-
-        let mut msg = 0;
-        for _ in 0..33 {
-            self.cs.set_low().ok();
-            let mut msgo = [RegAddr::FIFO_STATUS | RegAddr::AF_READ, 0];
-            let msgi = self.spi.transfer(&mut msgo).ok().unwrap();
-            self.cs.set_high().ok();
-            let fifo = msgi[1] & 0x3F;
-            msg = msgi[1];
-            if fifo == 0 {
-                break;
-            } else if fifo <= 32 {
-                self.query();
-            }
-        }
-
-        if !self.buffer.empty() {
-            self.report();
-        }
-        self.send_status(before, after, msg);
     }
 
     fn send(&mut self, data: &[u8]) {
@@ -299,7 +277,7 @@ pub fn query_adxl345(context: &mut State, _oid: u8, clock: u32, rest_ticks: u32)
     if rest_ticks != 0 {
         context.adxl.sched_start(clock, rest_ticks);
     } else {
-        context.adxl.stop(&ampon_global().clock);
+        context.adxl.stop();
     }
 }
 
