@@ -42,6 +42,7 @@ impl RegAddr {
 }
 
 const DEVICE_ID: u8 = 0xe5;
+const SAMPLE_LEN_BYTES: usize = 5;
 
 pub struct SampleBuffer<const N: usize> {
     count: usize,
@@ -71,7 +72,7 @@ impl<const N: usize> SampleBuffer<N> {
     }
 
     pub fn full(&self) -> bool {
-        self.count + 5 > N
+        self.count + SAMPLE_LEN_BYTES > N
     }
 
     pub fn empty(&self) -> bool {
@@ -96,7 +97,7 @@ impl<const N: usize> SampleBuffer<N> {
         self.buffer[self.count + 2] = d[5];
         self.buffer[self.count + 3] = (d[2] & 0x1f) | (d[6] << 5);
         self.buffer[self.count + 4] = (d[4] & 0x1f) | ((d[6] << 2) & 0x60);
-        self.count += 5;
+        self.count += SAMPLE_LEN_BYTES;
     }
 }
 
@@ -204,26 +205,26 @@ where
         let msgi = self.spi.transfer(&mut msgo).ok().unwrap();
         self.cs.set_high().ok();
         let after = clock.low();
-        self.send_status(before, after, msgi[1]);
+        let fifo_packed_len = (msgi[1] & 0x7F) as u32 * SAMPLE_LEN_BYTES as u32;
+        self.send_status(before, after, fifo_packed_len);
     }
 
-    fn send_status(&self, before: InstantShort, after: InstantShort, fifo: u8) {
+    fn send_status(&self, before: InstantShort, after: InstantShort, fifo: u32) {
         let delta = u32::from(after).wrapping_sub(u32::from(before));
         klipper_reply!(
-            adxl345_status,
+            sensor_bulk_status,
             oid: u8 = self.oid,
             clock: u32 = before.into(),
             query_ticks: u32 = delta,
             next_sequence: u16 = self.sequence,
-            buffered: u8 = self.buffer.count() as u8,
-            fifo: u8 = fifo,
-            limit_count: u16 = self.limit
+            buffered: u32 = self.buffer.count() as u32 + fifo,
+            possible_overflows: u16 = self.limit
         );
     }
 
     fn report(&mut self) {
         klipper_reply!(
-            adxl345_data,
+            sensor_bulk_data,
             oid: u8 = self.oid,
             sequence: u16 = self.sequence,
             data: &[u8] = self.buffer.contents()
