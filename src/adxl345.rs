@@ -54,8 +54,6 @@ pub struct Adxl<SPI, PIN> {
     cs: PIN,
     dev_id: u8,
     oid: u8,
-    running: bool,
-    start_time: Option<InstantShort>,
     wake_time: Option<InstantShort>,
     rest_ticks: u32,
     sequence: u16,
@@ -112,8 +110,6 @@ where
             cs,
             dev_id: 0,
             oid: 0,
-            running: false,
-            start_time: None,
             wake_time: None,
             rest_ticks: 0,
             sequence: 0,
@@ -134,21 +130,16 @@ where
         self.dev_id == DEVICE_ID
     }
 
-    fn start(&mut self, clock: InstantShort) {
-        self.cs.set_low().ok();
-        self.spi.write(&[RegAddr::POWER_CTL, 0x08]).ok();
-        self.cs.set_high().ok();
-        self.running = true;
-        self.sched_wake(clock);
+    fn start(&mut self, clock: InstantShort, rest_ticks: u32) {
+        self.limit = 0;
+        self.sequence = 0;
+        self.buffer.clear();
+        self.rest_ticks = rest_ticks;
+        self.wake_time = Some(clock + rest_ticks);
     }
 
     fn stop(&mut self) {
-        self.running = false;
         self.wake_time = None;
-
-        self.cs.set_low().ok();
-        self.spi.write(&[RegAddr::POWER_CTL, 0x00]).ok();
-        self.cs.set_high().ok();
     }
 
     fn send(&mut self, data: &[u8]) {
@@ -233,36 +224,11 @@ where
         self.sequence += 1;
     }
 
-    fn sched_start(&mut self, clock: u32, rest_ticks: u32) {
-        self.running = false;
-        self.limit = 0;
-        self.sequence = 0;
-        self.buffer.clear();
-        self.rest_ticks = rest_ticks;
-        self.start_time = Some(InstantShort::new(clock));
-    }
-
-    fn sched_wake(&mut self, clock: InstantShort) {
-        self.wake_time = Some(clock + self.rest_ticks);
-    }
-
     pub fn run(&mut self, clock: InstantShort) {
-        if let Some(st) = self.start_time {
-            if clock.after(st) {
-                self.start_time = None;
-                self.start(clock);
-                return;
-            }
-        }
-
         if let Some(wt) = self.wake_time {
             if clock.after(wt) {
                 let rest = self.query();
-                self.wake_time = if self.running {
-                    Some(clock + rest)
-                } else {
-                    None
-                };
+                self.wake_time = Some(clock + rest);
             }
         }
     }
@@ -274,9 +240,9 @@ pub fn config_adxl345(context: &mut State, oid: u8, _spi_oid: u8) {
 }
 
 #[klipper_command]
-pub fn query_adxl345(context: &mut State, _oid: u8, clock: u32, rest_ticks: u32) {
+pub fn query_adxl345(context: &mut State, _oid: u8, rest_ticks: u32) {
     if rest_ticks != 0 {
-        context.adxl.sched_start(clock, rest_ticks);
+        context.adxl.start(ampon_global().clock.low(), rest_ticks);
     } else {
         context.adxl.stop();
     }
